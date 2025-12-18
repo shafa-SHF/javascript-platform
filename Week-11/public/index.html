@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Article Hub</title>
+    <style>
+        :root { --primary: #2c3e50; --accent: #3498db; --danger: #e74c3c; --success: #27ae60; --light: #f4f7f6; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--light); }
+        
+        /* Centered Auth Overlay */
+        #auth-overlay { position: fixed; inset: 0; background: var(--primary); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .auth-card { background: white; padding: 30px; border-radius: 12px; width: 320px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        
+        /* Main UI */
+        #main-app { display: none; }
+        nav { background: var(--primary); color: white; padding: 15px 30px; display: flex; justify-content: space-between; }
+        .container { max-width: 900px; margin: 20px auto; padding: 0 20px; }
+        .card { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        
+        /* Table Styling */
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: left; }
+        th { background: #f8f9fa; }
+
+        input, select, textarea { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { cursor: pointer; border-radius: 4px; border: none; font-weight: bold; }
+        .btn-main { background: var(--accent); color: white; width: 100%; padding: 12px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <div id="auth-overlay">
+        <div class="auth-card" id="login-box">
+            <h2 style="text-align:center">Sign In</h2>
+            <input type="email" id="l-email" placeholder="Email">
+            <input type="password" id="l-pw" placeholder="Password">
+            <button class="btn-main" onclick="login()">Login</button>
+            <p style="text-align:center; font-size:14px">No account? <a href="#" onclick="toggleAuth(true)">Register</a></p>
+        </div>
+        <div class="auth-card hidden" id="reg-box">
+            <h2 style="text-align:center">Register</h2>
+            <input type="email" id="r-email" placeholder="Email">
+            <input type="password" id="r-pw" placeholder="Password">
+            <select id="r-role">
+                <option value="MEMBER">Member</option>
+                <option value="ADMIN">Admin</option>
+            </select>
+            <button class="btn-main" onclick="register()">Create Account</button>
+            <p style="text-align:center; font-size:14px">Have an account? <a href="#" onclick="toggleAuth(false)">Login</a></p>
+        </div>
+    </div>
+
+    <div id="main-app">
+        <nav>
+            <div style="font-size:20px; font-weight:bold">Article Hub</div>
+            <div id="nav-user"></div>
+        </nav>
+
+        <div class="container">
+            <div class="card">
+                <h3>Create Article</h3>
+                <input type="text" id="p-title" placeholder="Title">
+                <textarea id="p-content" placeholder="Content..."></textarea>
+                <button class="btn-main" onclick="postArt()">Publish</button>
+            </div>
+
+            <h2>Recent Articles</h2>
+            <div id="article-list"></div>
+
+            <div id="admin-table-section" class="card hidden" style="border-top: 5px solid var(--danger);">
+                <h3 style="color:var(--danger)">Registered Users (Admin Only)</h3>
+                <table>
+                    <thead>
+                        <tr><th>ID</th><th>Email</th><th>Role</th></tr>
+                    </thead>
+                    <tbody id="user-rows"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let user = null;
+
+        function toggleAuth(showReg) {
+            document.getElementById('login-box').classList.toggle('hidden', showReg);
+            document.getElementById('reg-box').classList.toggle('hidden', !showReg);
+        }
+
+        async function login() {
+            const email = document.getElementById('l-email').value;
+            const password = document.getElementById('l-pw').value;
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ email, password })
+            });
+            if(res.ok) checkUser(); else alert("Login Failed");
+        }
+
+        async function register() {
+            const email = document.getElementById('r-email').value;
+            const password = document.getElementById('r-pw').value;
+            const role = document.getElementById('r-role').value;
+            await fetch('/api/register', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ email, password, role })
+            });
+            alert("Registered! Now Login.");
+            toggleAuth(false);
+        }
+
+        async function checkUser() {
+            const res = await fetch('/api/me');
+            user = await res.json();
+            if (user.loggedIn) {
+                document.getElementById('auth-overlay').style.display = 'none';
+                document.getElementById('main-app').style.display = 'block';
+                document.getElementById('nav-user').innerHTML = `${user.email} (${user.role}) <button onclick="logout()">Logout</button>`;
+                loadArticles();
+                if(user.role === 'ADMIN') loadUserTable();
+            }
+        }
+
+        async function loadArticles() {
+            const res = await fetch('/articles');
+            const data = await res.json();
+            document.getElementById('article-list').innerHTML = data.map(a => `
+                <div class="card">
+                    <h4>${a.title}</h4>
+                    <p>${a.content}</p>
+                    <small>By: ${a.author.email}</small>
+                    ${(user.role === 'ADMIN' || user.id === a.authorId) ? `<button onclick="delArt(${a.id})">Delete</button>` : ''}
+                </div>
+            `).join('');
+        }
+
+        async function loadUserTable() {
+            document.getElementById('admin-table-section').classList.remove('hidden');
+            const res = await fetch('/api/admin/users');
+            const users = await res.json();
+            document.getElementById('user-rows').innerHTML = users.map(u => `
+                <tr>
+                    <td>${u.id}</td>
+                    <td>${u.email}</td>
+                    <td><span style="color:${u.role === 'ADMIN' ? 'red' : 'blue'}">${u.role}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        async function postArt() {
+            const title = document.getElementById('p-title').value;
+            const content = document.getElementById('p-content').value;
+            await fetch('/articles', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ title, content })
+            });
+            location.reload();
+        }
+
+        async function delArt(id) {
+            await fetch('/articles/'+id, { method: 'DELETE' });
+            loadArticles();
+        }
+
+        async function logout() {
+            await fetch('/api/logout', { method: 'POST' });
+            location.reload();
+        }
+
+        checkUser();
+    </script>
+</body>
+</html>

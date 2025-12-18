@@ -1,0 +1,7 @@
+# Dependency directories
+/node_modules
+
+# Prisma database and client files
+/dev.db
+prisma/dev.db
+/client
