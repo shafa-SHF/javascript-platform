@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Job Portal App</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: #f2f6fc;
+    }
+
+    header {
+      background: #1976d2;
+      color: white;
+      padding: 16px;
+      text-align: center;
+      font-size: 22px;
+    }
+
+    .card {
+      background: white;
+      max-width: 360px;
+      margin: 30px auto;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    input, button {
+      width: 100%;
+      padding: 8px;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+
+    button {
+      background: #1976d2;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #125ea7;
+    }
+
+    .job {
+      background: white;
+      padding: 15px;
+      border-radius: 10px;
+      margin: 15px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    .admin {
+      color: red;
+      font-weight: bold;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    ul {
+      padding-left: 20px;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>Job Portal</header>
+
+<!-- REGISTER -->
+<div id="register" class="card">
+  <h3>Register</h3>
+  <input id="regEmail" placeholder="Email">
+  <input id="regPassword" type="password" placeholder="Password">
+  <button onclick="register()">Register</button>
+  <p>
+    Already have account?
+    <button onclick="showLogin()">Go to Login</button>
+  </p>
+</div>
+
+<!-- LOGIN -->
+<div id="login" class="card hidden">
+  <h3>Login</h3>
+  <input id="loginEmail" placeholder="Email">
+  <input id="loginPassword" type="password" placeholder="Password">
+  <button onclick="login()">Login</button>
+</div>
+
+<!-- JOB LIST -->
+<div id="jobs" class="hidden"></div>
+
+<!-- ADMIN PANEL -->
+<div id="adminPanel" class="card hidden"></div>
+
+<script>
+  // ===== ADMIN CREDENTIALS =====
+  const ADMIN_EMAIL = "admin@jobportal.com";
+  const ADMIN_PASSWORD = "admin123";
+
+  function showLogin() {
+    document.getElementById("register").classList.add("hidden");
+    document.getElementById("login").classList.remove("hidden");
+  }
+
+  function register() {
+    const email = regEmail.value.trim();
+    const password = regPassword.value.trim();
+
+    if (!email || !password) {
+      alert("Fill all fields");
+      return;
+    }
+
+    let users = JSON.parse(localStorage.getItem("users")) || [];
+
+    if (users.find(u => u.email === email)) {
+      alert("User already registered");
+      return;
+    }
+
+    users.push({ email, password });
+    localStorage.setItem("users", JSON.stringify(users));
+
+    alert("Registered successfully");
+    showLogin();
+  }
+
+  function login() {
+    const email = loginEmail.value.trim();
+    const password = loginPassword.value.trim();
+
+    // ===== ADMIN LOGIN =====
+    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+      localStorage.setItem("role", "admin");
+      showJobs();
+      return;
+    }
+
+    if (email === ADMIN_EMAIL && password !== ADMIN_PASSWORD) {
+      alert("Wrong admin password");
+      return;
+    }
+
+    // ===== MEMBER LOGIN =====
+    let users = JSON.parse(localStorage.getItem("users")) || [];
+    const user = users.find(u => u.email === email && u.password === password);
+
+    if (!user) {
+      alert("Not registered or wrong password");
+      return;
+    }
+
+    localStorage.setItem("role", "member");
+    showJobs();
+  }
+
+  function showJobs() {
+    document.getElementById("register").classList.add("hidden");
+    document.getElementById("login").classList.add("hidden");
+    document.getElementById("jobs").classList.remove("hidden");
+
+    const role = localStorage.getItem("role");
+    const jobsDiv = document.getElementById("jobs");
+    const adminPanel = document.getElementById("adminPanel");
+
+    const jobs = [
+      { title: "Frontend Developer", company: "Google" },
+      { title: "Backend Developer", company: "Amazon" },
+      { title: "UI Designer", company: "Microsoft" }
+    ];
+
+    let html = "<h3 style='text-align:center'>Job Vacancies</h3>";
+
+    jobs.forEach(job => {
+      html += `
+        <div class="job">
+          <b>${job.title}</b><br>
+          ${job.company}<br><br>
+      `;
+
+      if (role === "member") {
+        html += `<button onclick="apply()">Apply</button>`;
+      }
+
+      if (role === "admin") {
+        html += `<div class="admin">Admin access: Manage job</div>`;
+      }
+
+      html += `</div>`;
+    });
+
+    jobsDiv.innerHTML = html;
+
+    // ===== ADMIN PANEL =====
+    adminPanel.classList.add("hidden");
+    if (role === "admin") {
+      adminPanel.classList.remove("hidden");
+
+      const users = JSON.parse(localStorage.getItem("users")) || [];
+
+      let adminHTML = `<h3>Admin Panel</h3>`;
+      adminHTML += `<p>Total Registered Users: <b>${users.length}</b></p>`;
+      adminHTML += `<ul>`;
+
+      users.forEach(u => {
+        adminHTML += `<li>${u.email}</li>`;
+      });
+
+      adminHTML += `</ul>`;
+
+      adminPanel.innerHTML = adminHTML;
+    }
+  }
+
+  function apply() {
+    alert("Job applied successfully!");
+  }
+</script>
+
+</body>
+</html>
