@@ -1,3 +1,28 @@
+/*
+Movie Search Backend API (Node.js + Express)
+
+Public API Used:
+The Movie Database (TMDB)
+https://www.themoviedb.org/
+
+API Testing:
+1) Server test (check if backend is running):
+   http://localhost:5000/
+2) Movie search API test:
+   http://localhost:5000/api/movies?query=avengers
+
+Description:
+This backend application fetches movie data from TMDB
+Uses API Key authentication
+Implements data validation for query parameters
+Includes error handling for failed API requests
+Returns movie data in JSON format
+
+Author: Shafa
+Purpose: University Assignment
+*/
+
+
 import express from "express";
 import dotenv from "dotenv";
 
@@ -12,7 +37,7 @@ app.use(express.json());
 
 // ROOT TEST
 app.get("/", (req, res) => {
-  res.send("Server is working ✅");
+  res.send("Server is working ");
 });
 
 // MOVIE API ROUTE
