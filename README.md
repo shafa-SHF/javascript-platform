@@ -23,12 +23,6 @@ Assignments and exercises for the **Platform-Based Programming (Pemrograman Berb
 | 15 | Final Project |
 | 16 | Final Exam (UAS) |
 
-## Highlights
-
-- **Week-13 / job-portal-api**: a job portal API with JWT authentication
-- **Week-14**: Job Vacancies API with authentication, unit and integration tests, and a frontend
-- **Week-15 / assignment**: final project
-- **Week-16 / assignment**: final exam
 
 ## Tech Used
 
